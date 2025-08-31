@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"inventory_management/database"
+	"inventory_management/models"
 	"net/http"
 	"strconv"
 	"strings"
@@ -8,9 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-
-	"inventory_management/database"
-	"inventory_management/models"
 )
 
 type PaginationResponse struct {
@@ -104,6 +103,11 @@ func GetItemByID(c *gin.Context) {
 	id := c.Param("id")
 	var item models.Item
 
+	if database.GetItemFromCache(id, &item) {
+		c.JSON(http.StatusOK, gin.H{"data": item})
+		return
+	}
+
 	result := database.DB.First(&item, "id = ?", id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -114,6 +118,7 @@ func GetItemByID(c *gin.Context) {
 		return
 	}
 
+	database.SetItemToCache(id, item)
 	c.JSON(http.StatusOK, gin.H{"data": item})
 }
 
@@ -142,6 +147,8 @@ func CreateItem(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create item"})
 		return
 	}
+
+	database.SetItemToCache(item.ID, item)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Item created successfully",
@@ -185,6 +192,8 @@ func UpdateItem(c *gin.Context) {
 		return
 	}
 
+	database.SetItemToCache(updatedItem.ID, updatedItem)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Item updated successfully",
 		"data":    updatedItem,
@@ -205,6 +214,8 @@ func DeleteItem(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
 		return
 	}
+
+	database.DeleteItemFromCache(id)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Item deleted successfully"})
 }
