@@ -2,14 +2,28 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("your_secret_key")
+var jwtSecret []byte
+var jwtSecretOnce sync.Once
+
+func getJWTSecret() []byte {
+	jwtSecretOnce.Do(func() {
+		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			secret = "your_secret_key"
+		}
+		jwtSecret = []byte(secret)
+	})
+	return jwtSecret
+}
 
 func GenerateJWT(username string) (string, error) {
 	claims := jwt.MapClaims{
@@ -17,7 +31,7 @@ func GenerateJWT(username string) (string, error) {
 		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+	return token.SignedString(getJWTSecret())
 }
 
 func JWTAuthMiddleware() gin.HandlerFunc {
@@ -33,7 +47,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
-			return jwtSecret, nil
+			return getJWTSecret(), nil
 		})
 		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
