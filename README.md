@@ -113,7 +113,7 @@ Inventory-Management-API/
 `Sorting`: Sort by name, stock, or price in ascending/descending order.  
 `Filtering`: Filter by minimum stock and name (case-insensitive partial match).  
 `Error Handling`: Improved error responses and validation.  
-`Performance`: Optimized database queries.  
+`Performance`: Optimized database queries and connection pooling.  
 `JWT Authentication`: Secure API endpoints with JSON Web Tokens.  
 `In-memory Caching`: Improve performance with Redis in-memory caching for frequently accessed data.
 ## Query Parameters
