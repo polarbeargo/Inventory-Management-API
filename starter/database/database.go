@@ -1,11 +1,14 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -14,6 +17,7 @@ import (
 )
 
 var DB *gorm.DB
+var PgxPool *pgxpool.Pool
 
 func InitDatabase() {
 	err := godotenv.Load()
@@ -30,13 +34,45 @@ func InitDatabase() {
 		os.Getenv("DB_SSLMODE"),
 	)
 
+	pgxConfig, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		log.Fatal("Failed to parse pgxpool config:", err)
+	}
+	pgxConfig.MaxConns = 100
+	pgxConfig.MinConns = 10
+	pgxConfig.MaxConnIdleTime = time.Hour
+
+	PgxPool, err = pgxpool.NewWithConfig(context.Background(), pgxConfig)
+	if err != nil {
+		log.Fatal("Failed to create pgxpool:", err)
+	}
+
+	go monitorPgxPool(PgxPool)
+
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to the database!", err)
 	}
 
+	sqlDB, err := DB.DB()
+	if err != nil {
+		log.Fatal("Failed to get generic database object from GORM DB", err)
+	}
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
 	DB.AutoMigrate(&models.Item{})
 	seedDatabase()
+}
+
+func monitorPgxPool(pool *pgxpool.Pool) {
+	for {
+		stats := pool.Stat()
+		log.Printf("[PgxPool] Total Conns: %d | Idle: %d | In Use: %d",
+			stats.TotalConns(), stats.IdleConns(), stats.AcquiredConns())
+		time.Sleep(time.Minute)
+	}
 }
 
 func seedDatabase() {
@@ -70,5 +106,17 @@ func seedDatabase() {
 		log.Println("Database seeded with 20 sample items.")
 	} else {
 		log.Println("Database already contains data, skipping seeding.")
+	}
+}
+
+func CloseDatabase() {
+	if PgxPool != nil {
+		PgxPool.Close()
+	}
+	if DB != nil {
+		sqlDB, err := DB.DB()
+		if err == nil {
+			sqlDB.Close()
+		}
 	}
 }

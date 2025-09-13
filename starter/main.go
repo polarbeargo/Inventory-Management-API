@@ -11,6 +11,8 @@ func main() {
 
 	database.InitRedis()
 	database.InitDatabase()
+	defer database.CloseDatabase()
+
 	log.Println("Server successfully connected to the database and seeded data.")
 	router := routes.SetupRoutes()
 	log.Println("Starting server on :8080...")
