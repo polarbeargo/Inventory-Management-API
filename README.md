@@ -46,12 +46,14 @@ The server will connect to your PostgreSQL database and seed it with 20 sample i
     ```
     curl http://localhost:8080/api/v1/inventory
     ```
+    ![Get All Items Demo](starter/gifs/1.gif). 
 - Get a JWT token
     ```
     curl -X POST http://localhost:8080/api/v1/login \
     -H "Content-Type: application/json" \
     -d '{"username": "admin", "password": "password"}'
     ```
+    ![Get JWT Token Demo](starter/gifs/2.gif).
 - Create new item
     ```
     curl -X POST http://localhost:8080/api/v1/inventory \
@@ -59,11 +61,12 @@ The server will connect to your PostgreSQL database and seed it with 20 sample i
     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
     -d '{"name": "New Item", "stock": 10, "price": 29.99}'
     ```
+    ![Create New Item Demo](starter/gifs/3.gif).
 - Get item by ID
     ```
     curl http://localhost:8080/api/v1/inventory/{id}
     ```
-
+    ![Get Item by ID Demo](starter/gifs/5.gif).
 - Update item
     ```
     curl -X PUT http://localhost:8080/api/v1/inventory/{id} \
@@ -71,16 +74,19 @@ The server will connect to your PostgreSQL database and seed it with 20 sample i
     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
     -d '{"name": "Updated Item", "stock": 15, "price": 39.99}'
     ```
+    ![Update Item Demo](starter/gifs/7.gif).
 - Delete item
     ```
     curl -X DELETE http://localhost:8080/api/v1/inventory/{id} \
     -H "Authorization: Bearer YOUR_TOKEN_HERE"
     ```
+    ![Delete Item Demo](starter/gifs/4.gif).
 2. Rate Limiting Test
 
     ```
     for i in {1..10}; do curl "http://localhost:8080/api/v1/inventory"; echo; done
     ```
+    ![Rate Limiting Demo](starter/gifs/6.gif).
 ## Project Structure
 
 ```
